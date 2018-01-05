@@ -1,19 +1,3 @@
-//
-// Copyright 2011 Ettus Research LLC
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
 
 #include <uhd/utils/thread_priority.hpp>
 #include <uhd/utils/safe_main.hpp>
@@ -23,170 +7,217 @@
 #include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/math/special_functions/round.hpp>
 #include <iostream>
+#include <fstream>
 #include <complex>
+#include <csignal>
+#include "wavetable.hpp"
 
 namespace po = boost::program_options;
 
+static bool stop_signal_called = false;
+void sig_int_handler(int){stop_signal_called = true;}
+
+/* List of things to setup transmitter for USRP
+*/
+
 int UHD_SAFE_MAIN(int argc, char *argv[]){
-    uhd::set_thread_priority_safe();
+        uhd::set_thread_priority_safe();
+        std::signal(SIGINT, &sig_int_handler);
 
-    //variables to be set by po
-    std::string args, sync, subdev, channel_list;
-    double seconds_in_future;
-    size_t total_num_samps;
-    double rate;
+        //variables to be set by po
+        std::string args, sync, subdev, channel_list, ant;
+        double seconds_in_future;
+        size_t total_num_samps;
+        double rate, freq, gain, bw;
 
-    //setup the program options
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help", "help message")
-        ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
-        ("secs", po::value<double>(&seconds_in_future)->default_value(1.5), "number of seconds in the future to receive")
-        ("nsamps", po::value<size_t>(&total_num_samps)->default_value(10000), "total number of samples to receive")
-        ("rate", po::value<double>(&rate)->default_value(100e6/16), "rate of incoming samples")
-        ("sync", po::value<std::string>(&sync)->default_value("now"), "synchronization method: now, pps, mimo")
-        ("subdev", po::value<std::string>(&subdev), "subdev spec (homogeneous across motherboards)")
-        ("dilv", "specify to disable inner-loop verbose")
-        ("channels", po::value<std::string>(&channel_list)->default_value("0"), "which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")
-    ;
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+        /************************** Parse Command Line **************************/
+        //setup the program options
+        po::options_description desc("Allowed options");
+        desc.add_options()
+                ("help", "help message")
+                ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
+                ("ant", po::value<std::string>(&args)->default_value("TX/RX"), "antenna port to use on both mimo channels")
+                ("secs", po::value<double>(&seconds_in_future)->default_value(1.5), "number of seconds in the future to transmit")
+                ("nsamps", po::value<size_t>(&total_num_samps)->default_value(10000), "total number of samples to transmit")
+                ("rate", po::value<double>(&rate)->default_value(100e6/16), "rate of incoming samples")
+                ("freq", po::value<double>(&freq)->default_value(100e6), "tx_center_frequency on both mimo channels")
+                ("gain", po::value<double>(&gain)->default_value(0), "trasmit gain on both mimo channels")
+                ("bw", po::value<double>(&gain)->default_value(0), "analog bandwidth on both mimo channels")
+                ("sync", po::value<std::string>(&sync)->default_value("now"), "synchronization method: now, pps, mimo")
+                ("subdev", po::value<std::string>(&subdev), "subdev spec (homogeneous across motherboards)")
+                ("channels", po::value<std::string>(&channel_list)->default_value("0"), "which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")
+        ;
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::notify(vm);
 
-    //print the help message
-    if (vm.count("help")){
-        std::cout << boost::format("UHD RX Multi Samples %s") % desc << std::endl;
-        std::cout <<
-        "    This is a demonstration of how to receive aligned data from multiple channels.\n"
-        "    This example can receive from multiple DSPs, multiple motherboards, or both.\n"
-        "    The MIMO cable or PPS can be used to synchronize the configuration. See --sync\n"
-        "\n"
-        "    Specify --subdev to select multiple channels per motherboard.\n"
-        "      Ex: --subdev=\"0:A 0:B\" to get 2 channels on a Basic RX.\n"
-        "\n"
-        "    Specify --args to select multiple motherboards in a configuration.\n"
-        "      Ex: --args=\"addr0=192.168.10.2, addr1=192.168.10.3\"\n"
-        << std::endl;
-        return ~0;
-    }
-
-    bool verbose = vm.count("dilv") == 0;
-
-    //create a usrp device
-    std::cout << std::endl;
-    std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
-    uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
-
-    //always select the subdevice first, the channel mapping affects the other settings
-    if (vm.count("subdev")) usrp->set_rx_subdev_spec(subdev); //sets across all mboards
-
-    std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
-
-    //set the rx sample rate (sets across all channels)
-    std::cout << boost::format("Setting RX Rate: %f Msps...") % (rate/1e6) << std::endl;
-    usrp->set_rx_rate(rate);
-    std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate()/1e6) << std::endl << std::endl;
-
-    std::cout << boost::format("Setting device timestamp to 0...") << std::endl;
-    if (sync == "now"){
-        //This is not a true time lock, the devices will be off by a few RTT.
-        //Rather, this is just to allow for demonstration of the code below.
-        usrp->set_time_now(uhd::time_spec_t(0.0));
-    }
-    else if (sync == "pps"){
-        usrp->set_time_source("external");
-        usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
-        boost::this_thread::sleep(boost::posix_time::seconds(1)); //wait for pps sync pulse
-    }
-    else if (sync == "mimo"){
-        UHD_ASSERT_THROW(usrp->get_num_mboards() == 2);
-
-        //make mboard 1 a slave over the MIMO Cable
-        usrp->set_clock_source("mimo", 1);
-        usrp->set_time_source("mimo", 1);
-
-        //set time on the master (mboard 0)
-        usrp->set_time_now(uhd::time_spec_t(0.0), 0);
-
-        //sleep a bit while the slave locks its time to the master
-        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    }
-
-    //detect which channels to use
-    std::vector<std::string> channel_strings;
-    std::vector<size_t> channel_nums;
-    boost::split(channel_strings, channel_list, boost::is_any_of("\"',"));
-    for(size_t ch = 0; ch < channel_strings.size(); ch++){
-        size_t chan = boost::lexical_cast<int>(channel_strings[ch]);
-        if(chan >= usrp->get_rx_num_channels()){
-            throw std::runtime_error("Invalid channel(s) specified.");
+        //print the help message
+        if (vm.count("help")){
+                std::cout << boost::format("UHD RX Multi Samples %s") % desc << std::endl;
+                std::cout <<
+                "    This is a demonstration of how to transmit aligned data to multiple channels.\n"
+                "    This example can transmit to multiple DSPs, multiple motherboards, or both.\n"
+                "\n"
+                "    Specify --subdev to select multiple channels per motherboard.\n"
+                "      Ex: --subdev=\"0:A 0:B\" to get 2 channels on a Basic RX.\n"
+                "\n"
+                "    Specify --args to select multiple motherboards in a configuration.\n"
+                "      Ex: --args=\"addr0=192.168.10.2, addr1=192.168.10.3\"\n"
+                << std::endl;
+                return ~0;
         }
-        else channel_nums.push_back(boost::lexical_cast<int>(channel_strings[ch]));
-    }
 
-    //create a receive streamer
-    //linearly map channels (index0 = channel0, index1 = channel1, ...)
-    uhd::stream_args_t stream_args("fc32"); //complex floats
-    stream_args.channels = channel_nums;
-    uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+        // Create USRP device
+        //  args - the device address arguments:
+        //    Ex0: "addr=192.168.10.2" for single USRP
+        //    Ex1: "addr0=192.168.10.2,addr1=192.168.10.3" for MIMO USRP setup
+        uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
-    //setup streaming
-    std::cout << std::endl;
-    std::cout << boost::format(
-        "Begin streaming %u samples, %f seconds in the future..."
-    ) % total_num_samps % seconds_in_future << std::endl;
-    uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-    stream_cmd.num_samps = total_num_samps;
-    stream_cmd.stream_now = false;
-    stream_cmd.time_spec = uhd::time_spec_t(seconds_in_future);
-    rx_stream->issue_stream_cmd(stream_cmd); //tells all channels to stream
+        // Detect the channel configurations
+        //   For 2x2 MIMO setup the USRP must have two channels
+        std::vector<size_t> channel_nums;
+        size_t n_chan = usrp->get_tx_num_channels();
+        if (n_chan != 2){
+                throw std::runtime_error("Invalid channel(s) specified, the USRP devices must have two channels");
+                return ~0;
+        }else{
+                channel_nums.push_back(0);
+                channel_nums.push_back(1);
+        }
+        std::cout << "N Channels: " << n_chan << "\n";
 
-    //meta-data will be filled in by recv()
-    uhd::rx_metadata_t md;
+        // Setup clock source for each Mboard
+        // The mother board 0 will use the internal clock source, while the mother board 1 will use MIMO clock
+        size_t n_mboards = usrp->get_num_mboards();
+        if( n_mboards != 2){
+                throw std::runtime_error("Invalid mboard(s) specfied, the USRP devices must have two mboards");
+                return ~0;
+        }else{
+                usrp->set_clock_source("internal", 0);
+                usrp->set_clock_source("mimo", 1);
+        }
+        std::cout << "N Mboards: " << n_mboards << "\n";
 
-    //allocate buffers to receive with samples (one buffer per channel)
-    const size_t samps_per_buff = rx_stream->get_max_num_samps();
-    std::vector<std::vector<std::complex<float> > > buffs(
-        usrp->get_rx_num_channels(), std::vector<std::complex<float> >(samps_per_buff)
-    );
+        // Skip the setup of subdevice
+        //   Ex: usrp->set_tx_subdev_spec(subdev);
 
-    //create a vector of pointers to point to each of the channel buffers
-    std::vector<std::complex<float> *> buff_ptrs;
-    for (size_t i = 0; i < buffs.size(); i++) buff_ptrs.push_back(&buffs[i].front());
+        // Setup the sampling rate on TX
+        usrp->set_tx_rate(rate);
+        std::cout << "TX Rate: " << rate << "\n";
 
-    //the first call to recv() will block this many seconds before receiving
-    double timeout = seconds_in_future + 0.1; //timeout (delay before receive + padding)
+        // For each channel tune the Frequency, Gan and BW, and Antenna
+        for(size_t ch = 0; ch < channel_nums.size(); ch++) {
+            // Create tune-request and tune frequency
+            uhd::tune_request_t tune_request(freq);
+            // tune_request.args = uhd::device_addr_t("mode_n=integer");
+            usrp->set_tx_freq(tune_request, channel_nums[ch]);
+            usrp->set_tx_gain(gain, channel_nums[ch]);
+            usrp->set_tx_bandwidth(bw, channel_nums[ch]);
+            usrp->set_tx_antenna("TX/RX", channel_nums[ch]);
+            
+            std::cout << "Ch"<<channel_nums[ch]<<" freq: "<<freq<<" gain: "<<gain<<" bw: "<<bw<<" antenna: "<<ant<<"\n";
+        }
+        boost::this_thread::sleep(boost::posix_time::seconds(1)); //allow for some setup time
 
-    size_t num_acc_samps = 0; //number of accumulated samples
-    while(num_acc_samps < total_num_samps){
-        //receive a single packet
-        size_t num_rx_samps = rx_stream->recv(
-            buff_ptrs, samps_per_buff, md, timeout
+        // Setup Time source on both motherboads
+        usrp->set_time_now(uhd::time_spec_t(0.0), 0); // Time zero for MB0
+        usrp->set_time_source("mimo", 1); // Time reference from MIMO for MB1
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100)); //allow for some setup time
+
+        // Create TX Streamer
+        //   Use complex float as computer format
+        //   Use complex short 8bits as wire format
+        uhd::stream_args_t stream_args("fc32", "sc8");
+        stream_args.channels = channel_nums;
+        uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
+
+        // Check MIMO and LO Locked on sensors
+        std::vector<std::string> sensor_names;
+        const size_t tx_sensor_chan = channel_list.empty() ? 0 : boost::lexical_cast<size_t>(channel_list[0]);
+        sensor_names = usrp->get_tx_sensor_names(tx_sensor_chan);
+        if (std::find(sensor_names.begin(), sensor_names.end(), "lo_locked") != sensor_names.end()) {
+            uhd::sensor_value_t lo_locked = usrp->get_tx_sensor("lo_locked", tx_sensor_chan);
+            std::cout << boost::format("Checking TX: %s ...") % lo_locked.to_pp_string() << std::endl;
+            UHD_ASSERT_THROW(lo_locked.to_bool());
+        }
+        const size_t mboard_sensor_idx = 0;
+        sensor_names = usrp->get_mboard_sensor_names(mboard_sensor_idx);
+        if (std::find(sensor_names.begin(), sensor_names.end(), "mimo_locked") != sensor_names.end()) {
+            uhd::sensor_value_t mimo_locked = usrp->get_mboard_sensor("mimo_locked", mboard_sensor_idx);
+            std::cout << boost::format("Checking TX: %s ...") % mimo_locked.to_pp_string() << std::endl;
+            UHD_ASSERT_THROW(mimo_locked.to_bool());
+        }
+
+        // Create timestamp metadada from transmitter
+        uhd::tx_metadata_t md;
+        md.start_of_burst = true;
+        md.end_of_burst   = false;
+        md.has_time_spec  = true;
+        md.time_spec = usrp->get_time_now() + uhd::time_spec_t(0.1);
+
+        // Setup transmitter buffer
+        size_t spb = tx_stream->get_max_num_samps();
+        std::vector<std::vector<std::complex<float> > > buff(
+                usrp->get_rx_num_channels(), std::vector<std::complex<float> >(spb)
         );
+        std::vector<std::complex<float> *> buffs;
+        for (size_t i = 0; i < buff.size(); i++) buffs.push_back(&buff[i].front());
+        
+        
+        const wave_table_class wave_table("SINE", 0.5);
+        double wave_freq_1 = 1e6;
+        const size_t step1 = boost::math::iround(wave_freq_1/usrp->get_tx_rate() * wave_table_len);
+        size_t index1 = 0;
+        double wave_freq_2 = 100e3;
+        const size_t step2 = boost::math::iround(wave_freq_2/usrp->get_tx_rate() * wave_table_len);
+        size_t index2 = 0;
+        std::cout << " step1 " << step1 << " step2 " << step2 << "\n";
 
-        //use a small timeout for subsequent packets
-        timeout = 0.1;
+        size_t n_samples_in_file  = 10240;
+        std::vector<std::vector<std::complex<float> > > input_samples(
+                usrp->get_rx_num_channels(), std::vector<std::complex<float> >(n_samples_in_file)
+        );
+        std::ifstream in_ch0_file("./ramdisk/input_ch0.dat", std::ifstream::binary);
+        std::ifstream in_ch1_file("./ramdisk/input_ch1.dat", std::ifstream::binary);
+        in_ch0_file.read((char*)&input_samples[0].front(), n_samples_in_file*sizeof(std::complex<float>));
+        in_ch1_file.read((char*)&input_samples[1].front(), n_samples_in_file*sizeof(std::complex<float>));
+        in_ch0_file.close();
+        in_ch1_file.close();
+        uint64_t file_idx = 0;
+        
+        //send data until the signal handler gets called
+        //or if we accumulate the number of samples specified (unless it's 0)
+        uint64_t num_acc_samps = 0;
+        while(true){
+                if(stop_signal_called) break;
 
-        //handle the error code
-        if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) break;
-        if (md.error_code != uhd::rx_metadata_t::ERROR_CODE_NONE){
-            throw std::runtime_error(str(boost::format(
-                "Receiver error %s"
-            ) % md.strerror()));
+#if 1           
+                for (size_t n = 0; n < spb; n++){
+                        buff[0][n] = input_samples[0][file_idx];
+                        buff[1][n] = input_samples[1][file_idx];
+                        file_idx = (file_idx + 1) % n_samples_in_file;
+                }
+                //std::cout << "idx " << file_idx << "\n";
+                tx_stream->send(buffs, spb, md);
+                md.start_of_burst = false;
+                md.has_time_spec = false;
+#else
+                for (size_t n = 0; n < spb; n++){
+                        buff[0][n] = wave_table(index1 += step1);
+                        buff[1][n] = wave_table(index2 += step2);
+                }
+                std::cout << "Sending " << spb << "\n";
+                tx_stream->send(buffs, spb, md);
+                md.start_of_burst = false;
+                md.has_time_spec = false;
+#endif
+
         }
 
-        if(verbose) std::cout << boost::format(
-            "Received packet: %u samples, %u full secs, %f frac secs"
-        ) % num_rx_samps % md.time_spec.get_full_secs() % md.time_spec.get_frac_secs() << std::endl;
+        md.end_of_burst = true;
+        tx_stream->send("", 0, md);
 
-        num_acc_samps += num_rx_samps;
-    }
-
-    if (num_acc_samps < total_num_samps) std::cerr << "Receive timeout before all samples received..." << std::endl;
-
-    //finished
-    std::cout << std::endl << "Done!" << std::endl << std::endl;
-
-    return EXIT_SUCCESS;
+        return EXIT_SUCCESS;
 }
