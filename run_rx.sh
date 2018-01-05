@@ -5,5 +5,5 @@
 	--gain=0 \
 	--bw=0 \
 	--nsamps=25000000 \
-	--out0="./ramdisk/output_ch0.dat" \
-	--out1="./ramdisk/output_ch1.dat"
+	--out0="./output_ch0.dat" \
+	--out1="./output_ch1.dat"

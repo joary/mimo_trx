@@ -27,7 +27,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::signal(SIGINT, &sig_int_handler);
 
         //variables to be set by po
-        std::string args, sync, subdev, channel_list, ant;
+        std::string args, sync, subdev, channel_list, ant, ch0_file, ch1_file;
         double seconds_in_future;
         size_t total_num_samps;
         double rate, freq, gain, bw;
@@ -45,9 +45,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                 ("freq", po::value<double>(&freq)->default_value(100e6), "tx_center_frequency on both mimo channels")
                 ("gain", po::value<double>(&gain)->default_value(0), "trasmit gain on both mimo channels")
                 ("bw", po::value<double>(&gain)->default_value(0), "analog bandwidth on both mimo channels")
-                ("sync", po::value<std::string>(&sync)->default_value("now"), "synchronization method: now, pps, mimo")
                 ("subdev", po::value<std::string>(&subdev), "subdev spec (homogeneous across motherboards)")
-                ("channels", po::value<std::string>(&channel_list)->default_value("0"), "which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")
+                ("in0", po::value<std::string>(&ch0_file)->default_value("./input_ch0.dat"), "channel 0 input file")
+                ("in1", po::value<std::string>(&ch1_file)->default_value("./input_ch1.dat"), "channel 1 input file")
         ;
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -179,8 +179,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         std::vector<std::vector<std::complex<float> > > input_samples(
                 usrp->get_rx_num_channels(), std::vector<std::complex<float> >(n_samples_in_file)
         );
-        std::ifstream in_ch0_file("./ramdisk/input_ch0.dat", std::ifstream::binary);
-        std::ifstream in_ch1_file("./ramdisk/input_ch1.dat", std::ifstream::binary);
+        std::ifstream in_ch0_file(ch0_file, std::ifstream::binary);
+        std::ifstream in_ch1_file(ch1_file, std::ifstream::binary);
         in_ch0_file.read((char*)&input_samples[0].front(), n_samples_in_file*sizeof(std::complex<float>));
         in_ch1_file.read((char*)&input_samples[1].front(), n_samples_in_file*sizeof(std::complex<float>));
         in_ch0_file.close();
