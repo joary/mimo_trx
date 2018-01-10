@@ -10,7 +10,7 @@ bits = [1;0;0;1];
 tx = wlanWaveformGenerator(bits,ht,'NumPackets',100);
 
 % normalize to -1 1
-tx2 = tx/max([max(real(tx)) max(imag(tx))]); 
+tx2 = tx/max([max(abs(real(tx))) max(abs(imag(tx)))]);
 %%
 %Saving as binary
 fid = fopen('signal0.dat','wb');
