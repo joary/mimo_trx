@@ -1,12 +1,14 @@
 ht = wlanHTConfig; %creating high throughput (HT) configuration 
 ht.NumTransmitAntennas = 2;
 ht.NumSpaceTimeStreams = 2 ;
-%ht.MCS = 8; %BPSK 1/2
-ht.MCS = 15; %64QAM	5/6
+ht.MCS = 8; %BPSK 1/2
+% ht.MCS = 15; %64QAM	5/6
 
 ht.ChannelBandwidth = 'CBW20'; % 20 MHz
 
-bits = [1;0;0;1];
+%bits = [1;0;0;1];
+bits = randi([0 1],cfgHT.PSDULength*8,1); % PSDULength in bytes
+
 tx = wlanWaveformGenerator(bits,ht,'NumPackets',100);
 
 % normalize to -1 1

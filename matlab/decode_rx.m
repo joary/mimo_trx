@@ -1,10 +1,19 @@
-cfgHT = wlanHTConfig;
-cfgHT.ChannelBandwidth = 'CBW20'; % 20 MHz channel bandwidth
-cfgHT.NumTransmitAntennas = 2;    % 2 transmit antennas
-cfgHT.NumSpaceTimeStreams = 2;    % 2 space-time streams
-cfgHT.PSDULength = 1000;          % PSDU length in bytes
-cfgHT.MCS = 15;                   % 2 spatial streams, 64-QAM rate-5/6
-cfgHT.ChannelCoding = 'BCC';      % BCC channel coding
+% cfgHT = wlanHTConfig;
+% cfgHT.ChannelBandwidth = 'CBW20'; % 20 MHz channel bandwidth
+% cfgHT.NumTransmitAntennas = 2;    % 2 transmit antennas
+% cfgHT.NumSpaceTimeStreams = 2;    % 2 space-time streams
+% cfgHT.PSDULength = 1000;          % PSDU length in bytes
+% cfgHT.MCS = 8;                   % 2 spatial streams, 64-QAM rate-5/6
+% cfgHT.ChannelCoding = 'BCC';      % BCC channel coding
+
+cfgHT = wlanHTConfig; %creating high throughput (HT) configuration 
+cfgHT.NumTransmitAntennas = 2;
+cfgHT.NumSpaceTimeStreams = 2 ;
+cfgHT.MCS = 8; %BPSK 1/2
+% ht.MCS = 15; %64QAM	5/6
+
+cfgHT.ChannelBandwidth = 'CBW20'; % 20 MHz
+
 
 ind = wlanFieldIndices(cfgHT);
 fs = 20e6;
@@ -13,11 +22,12 @@ n = 0;
 
 wlan_80211_read_dat;
 
-%rx = [tx0, tx1];
-rx = [rx0(1:4020*2), rx1(1:4020*2)];
+txPSDU = csvread('bits.csv');
+rx = [tx0, tx1];
+% rx = [rx0(1:4020*2), rx1(1:4020*2)];
 
 % Packet detect and determine coarse packet offset
-coarsePktOffset = wlanPacketDetect(rx,cfgHT.ChannelBandwidth)
+coarsePktOffset = wlanPacketDetect(rx,cfgHT.ChannelBandwidth);
 if isempty(coarsePktOffset) % If empty no L-STF detected; packet error
     numPacketErrors = numPacketErrors+1;
     n = n+1;
@@ -64,6 +74,8 @@ chanEst = wlanHTLTFChannelEstimate(htltfDemod,cfgHT);
 % Extract HT Data samples from the waveform and recover the PSDU
 htdata = rx(pktOffset+(ind.HTData(1):ind.HTData(2)),:);
 rxPSDU = wlanHTDataRecover(htdata,chanEst,nVarHT,cfgHT);
+
+biterr(txPSDU,rxPSDU)
 
 % Determine if any bits are in error, i.e. a packet error
 %packetError = any(biterr(txPSDU,rxPSDU));
