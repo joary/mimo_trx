@@ -16,24 +16,24 @@ n = 0;
 
 %wlan_80211_read_dat;
 
-load tx_data
+load ./data/tx_data
 
 % Test selector
 S = 2;
 if S == 1% Test without air
-	fid = fopen('wlan_ch0.dat','r');
+	fid = fopen('./data/wlan_ch0.dat','r');
 	rx0 = fread(fid,'float32');
 	fclose(fid);
-	fid = fopen('wlan_ch1.dat','r');
+	fid = fopen('./data/wlan_ch1.dat','r');
 	rx1 = fread(fid,'float32');
 	fclose(fid);
 	rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
 	rx1c = rx1(1:2:end-1) + rx1(2:2:end)*1j;
 elseif S == 2
-	fid = fopen('../rx_wl_ch0.dat','r');
+	fid = fopen('./data/rx_wl_ch0.dat','r');
 	rx0 = fread(fid,'float32');
 	fclose(fid);
-	fid = fopen('../rx_wl_ch1.dat','r');
+	fid = fopen('./data/rx_wl_ch1.dat','r');
 	rx1 = fread(fid,'float32');
 	fclose(fid);
 	rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
