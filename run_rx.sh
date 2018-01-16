@@ -1,9 +1,9 @@
 ./rx_mimo --args="addr0=192.168.10.2, addr1=192.168.10.3" \
-	--secs=0.5 \
+	--secs=1.5 \
 	--rate=25e6 \
-	--freq=100e6 \
-	--gain=0 \
+	--freq=2e9 \
+	--gain=7 \
 	--bw=0 \
-	--nsamps=25000000 \
-	--out0="./output_ch0.dat" \
-	--out1="./output_ch1.dat"
+	--nsamps=250000 \
+	--out0="./rx_wl_ch0.dat" \
+	--out1="./rx_wl_ch1.dat"
