@@ -3,7 +3,8 @@ cfgHT.ChannelBandwidth = 'CBW20'; % 20 MHz channel bandwidth
 cfgHT.NumTransmitAntennas = 2;    % 2 transmit antennas
 cfgHT.NumSpaceTimeStreams = 2;    % 2 space-time streams
 cfgHT.PSDULength = 1000;          % PSDU length in bytes
-cfgHT.MCS = 15;                   % 2 spatial streams, 64-QAM rate-5/6
+%cfgHT.MCS = 15;                   % 2 spatial streams, 64-QAM rate-5/6
+cfgHT.MCS = 9;                   % 2 spatial streams, 4-QAM rate-1/2
 cfgHT.ChannelCoding = 'BCC';      % BCC channel coding
 
 txPSDU = randi([0 1],cfgHT.PSDULength*8,1); % PSDULength in bytes
