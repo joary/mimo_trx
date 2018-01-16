@@ -40,7 +40,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
                 ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
                 ("ant", po::value<std::string>(&args)->default_value("TX/RX"), "antenna port to use on both mimo channels")
                 ("secs", po::value<double>(&seconds_in_future)->default_value(1.5), "number of seconds in the future to transmit")
-                ("nsamps", po::value<size_t>(&total_num_samps)->default_value(10000), "total number of samples to transmit")
+                ("nsamps", po::value<size_t>(&total_num_samps)->default_value(10000), "number of samples to read from file")
                 ("rate", po::value<double>(&rate)->default_value(100e6/16), "rate of incoming samples")
                 ("freq", po::value<double>(&freq)->default_value(100e6), "tx_center_frequency on both mimo channels")
                 ("gain", po::value<double>(&gain)->default_value(0), "trasmit gain on both mimo channels")
@@ -175,7 +175,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         size_t index2 = 0;
         std::cout << " step1 " << step1 << " step2 " << step2 << "\n";
 
-        size_t n_samples_in_file  = 10240;
+        size_t n_samples_in_file  = total_num_samps;
         std::vector<std::vector<std::complex<float> > > input_samples(
                 usrp->get_rx_num_channels(), std::vector<std::complex<float> >(n_samples_in_file)
         );
