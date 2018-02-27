@@ -4,10 +4,10 @@ LD=-lboost_program_options -lboost_system -lboost_thread -luhd -lm -lboost_math_
 all: rx_mimo tx_mimo
 
 rx_mimo: rx_mimo.cpp
-	g++ -I . -L /usr/lib  -I /usr/include $(LD) rx_mimo.cpp -o rx_mimo
+	g++ -std=c++11 -I . -L /usr/lib  -I /usr/include rx_mimo.cpp  $(LD) -o rx_mimo
 
 tx_mimo: tx_mimo.cpp
-	g++ -I . -L /usr/lib  -I /usr/include $(LD) tx_mimo.cpp -o tx_mimo
+	g++ -std=c++11 -I . -L /usr/lib  -I /usr/include tx_mimo.cpp  $(LD) -o tx_mimo
 
 clean:
 	rm -rf rx_mimo tx_mimo
