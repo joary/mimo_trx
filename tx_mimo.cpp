@@ -38,7 +38,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         desc.add_options()
                 ("help", "help message")
                 ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
-                ("ant", po::value<std::string>(&args)->default_value("TX/RX"), "antenna port to use on both mimo channels")
+                ("ant", po::value<std::string>(&ant)->default_value("TX/RX"), "antenna port to use on both mimo channels")
                 ("secs", po::value<double>(&seconds_in_future)->default_value(1.5), "number of seconds in the future to transmit")
                 ("nsamps", po::value<size_t>(&total_num_samps)->default_value(10000), "number of samples to read from file")
                 ("rate", po::value<double>(&rate)->default_value(100e6/16), "rate of incoming samples")
@@ -115,7 +115,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             usrp->set_tx_freq(tune_request, channel_nums[ch]);
             usrp->set_tx_gain(gain, channel_nums[ch]);
             usrp->set_tx_bandwidth(bw, channel_nums[ch]);
-            usrp->set_tx_antenna("TX/RX", channel_nums[ch]);
+            usrp->set_tx_antenna(ant, channel_nums[ch]);
             
             std::cout << "Ch"<<channel_nums[ch]<<" freq: "<<freq<<" gain: "<<gain<<" bw: "<<bw<<" antenna: "<<ant<<"\n";
         }

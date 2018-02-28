@@ -107,7 +107,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         usrp->set_rx_freq(tune_request, channel_nums[ch]);
         usrp->set_rx_gain(gain, channel_nums[ch]);
         usrp->set_rx_bandwidth(bw, channel_nums[ch]);
-        usrp->set_rx_antenna("RX2", channel_nums[ch]);
+        usrp->set_rx_antenna(ant, channel_nums[ch]);
         
         std::cout << "Ch"<<channel_nums[ch]<<" freq: "<<freq<<" gain: "<<gain<<" bw: "<<bw<<" antenna: "<<ant<<"\n";
     }
