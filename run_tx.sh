@@ -3,5 +3,5 @@
 	--freq=100e6 \
 	--gain=0 \
 	--ant="TX/RX"
-	--in0="./input_ch0.dat" \
-	--in1="./input_ch1.dat"
+	--in0="./data/wlan_ch0.bin" \
+	--in1="./data/wlan_ch1.bin"
