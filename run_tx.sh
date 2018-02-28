@@ -2,6 +2,7 @@
 	--rate=25e6 \
 	--freq=100e6 \
 	--gain=0 \
-	--ant="TX/RX"
+	--ant="TX/RX" \
+	--nsamps=80000 \
 	--in0="./data/wlan_ch0.bin" \
 	--in1="./data/wlan_ch1.bin"
