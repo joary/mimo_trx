@@ -24,3 +24,5 @@ A sample matlab code to generate 802.11 signal is shown in `matlab/encode_tx.m`,
 A sample pre-recorded signal is hold in `data/wlan_ch0.bin` and `data/wlan_ch1.bin` for both MIMO channels.
 
 The matlab workspace of the simualtion is held in `data/tx_data.mat`.
+
+# Setup at Univ Texas
