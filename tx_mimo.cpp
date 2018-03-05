@@ -193,7 +193,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         while(true){
                 if(stop_signal_called) break;
 
-#if 1           
+#if 1
                 for (size_t n = 0; n < spb; n++){
                         buff[0][n] = input_samples[0][file_idx];
                         buff[1][n] = input_samples[1][file_idx];
@@ -206,7 +206,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 #else
                 for (size_t n = 0; n < spb; n++){
                         buff[0][n] = wave_table(index1 += step1);
-                        buff[1][n] = wave_table(index2 += step2);
+                        buff[1][n] = 0; //wave_table(index2 += step2);
                 }
                 std::cout << "Sending " << spb << "\n";
                 tx_stream->send(buffs, spb, md);
