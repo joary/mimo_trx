@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ../tx_mimo --args="addr0=192.168.25.2, addr1=192.168.25.3" \
 	--rate=25e6 \
 	--freq=2e9 \
