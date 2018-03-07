@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./rx_mimo --args="addr0=192.168.10.4, addr1=192.168.10.3" \
+../rx_mimo --args="addr0=192.168.10.4, addr1=192.168.10.3" \
 	--secs=1.5 \
 	--rate=25e6 \
 	--freq=2e9 \
