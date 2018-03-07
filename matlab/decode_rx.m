@@ -1,44 +1,37 @@
 clear all;
 close all;
 
-cfgHT = wlanHTConfig;
-cfgHT.ChannelBandwidth = 'CBW20'; % 20 MHz channel bandwidth
-cfgHT.NumTransmitAntennas = 2;    % 2 transmit antennas
-cfgHT.NumSpaceTimeStreams = 2;    % 2 space-time streams
-cfgHT.PSDULength = 1000;          % PSDU length in bytes
-cfgHT.MCS = 9;                   % 2 spatial streams, 64-QAM rate-5/6
-cfgHT.ChannelCoding = 'BCC';      % BCC channel coding
+% Prerecorded Dual Spatial Stream
+config_file = '../data/MCS1_QPSK_rate1-2_config.mat';
+ch0_file = '../data/MCS1_QPSK_rate1-2_ch0.bin';
+ch1_file = '../data/MCS1_QPSK_rate1-2_ch1.bin';
+
+% Prerecorded Single Spatial Stream
+%config_file = '../data/tx_data.mat';
+%ch0_file = '../data/wlan_ch0.bin';
+%ch1_file = '../data/wlan_ch1.bin';
+
+% Recently Recorded
+%ch0_file = '../rx_wl_ch0.bin';
+%ch1_file = '../rx_wl_ch1.bin';
+
+load(config_file) % Load configurations from tx_data
 
 ind = wlanFieldIndices(cfgHT);
 fs = 20e6;
 numPacketErrors = 0;
 n = 0;
 
-%wlan_80211_read_dat;
-
-load ./data/tx_data
-
 % Test selector
-S = 2;
-if S == 1% Test without air
-	fid = fopen('./data/wlan_ch0.dat','r');
-	rx0 = fread(fid,'float32');
-	fclose(fid);
-	fid = fopen('./data/wlan_ch1.dat','r');
-	rx1 = fread(fid,'float32');
-	fclose(fid);
-	rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
-	rx1c = rx1(1:2:end-1) + rx1(2:2:end)*1j;
-elseif S == 2
-	fid = fopen('./data/rx_wl_ch0.dat','r');
-	rx0 = fread(fid,'float32');
-	fclose(fid);
-	fid = fopen('./data/rx_wl_ch1.dat','r');
-	rx1 = fread(fid,'float32');
-	fclose(fid);
-	rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
-	rx1c = rx1(1:2:end-1) + rx1(2:2:end)*1j;
-end
+fid = fopen(ch0_file,'r');
+rx0 = fread(fid,'float32');
+fclose(fid);
+fid = fopen(ch0_file,'r');
+rx1 = fread(fid,'float32');
+fclose(fid);
+rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
+rx1c = rx1(1:2:end-1) + rx1(2:2:end)*1j;
+
 
 %txPSDU = csvread('bits.csv');
 rx = [rx0c, rx1c];
