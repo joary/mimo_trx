@@ -22,11 +22,11 @@ fs = 20e6;
 numPacketErrors = 0;
 n = 0;
 
-% Test selector
+% Load data
 fid = fopen(ch0_file,'r');
 rx0 = fread(fid,'float32');
 fclose(fid);
-fid = fopen(ch0_file,'r');
+fid = fopen(ch1_file,'r');
 rx1 = fread(fid,'float32');
 fclose(fid);
 rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
@@ -77,10 +77,12 @@ chanEst = wlanHTLTFChannelEstimate(htltfDemod,cfgHT);
 % Recover the transmitted PSDU in HT Data
 % Extract HT Data samples from the waveform and recover the PSDU
 htdata = rx(pktOffset+(ind.HTData(1):ind.HTData(2)),:);
-rxPSDU = wlanHTDataRecover(htdata,chanEst,nVarHT,cfgHT);
+[rxPSDU, datasym] = wlanHTDataRecover(htdata,chanEst,nVarHT,cfgHT);
 
 a = biterr(txPSDU,rxPSDU)/(cfgHT.PSDULength*8);
 fprintf("N errrs %f\n", a)
+
+plot(datasym(:), '.');
 
 % Determine if any bits are in error, i.e. a packet error
 %packetError = any(biterr(txPSDU,rxPSDU));
