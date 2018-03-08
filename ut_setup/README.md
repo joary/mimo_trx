@@ -59,25 +59,26 @@ Each `rx_*` script will generate a pair of recorded signal
 # Decoding Data
 
 A copy of matlab workspace used to generate the transmitted signals is hold in:
+
 1. For 1 Spatial Stream: `~/mimo_trx/data/MCS9_QPSK_rate1-2_config.mat`
 2. For 2 Spatial Streams: `~/mimo_trx/data/MCS1_QPSK_rate1-2_config.mat`
+
 
 On the other hand, to read the received signals the following matlab code can be used.
 
 ```
-ch0_file = rx_**_ch0.dat
-ch1_file = rx_**_ch1.dat
-
-% Load data
-fid = fopen(ch0_file,'r'); 
-rx0 = fread(fid,'float32'); 
-fclose(fid);
-fid = fopen(ch1_file,'r');
-rx1 = fread(fid,'float32');
-fclose(fid);
-rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
-rx1c = rx1(1:2:end-1) + rx1(2:2:end)*1j;
-rx = [rx0c(1e4:end), rx1c(1e4:end)];
+function [rx] = load_mimo_signals(ch0_file, ch1_file)
+  % Load data
+  fid = fopen(ch0_file,'r'); 
+  rx0 = fread(fid,'float32'); 
+  fclose(fid);
+  fid = fopen(ch1_file,'r');
+  rx1 = fread(fid,'float32');
+  fclose(fid);
+  rx0c = rx0(1:2:end-1) + rx0(2:2:end)*1j;
+  rx1c = rx1(1:2:end-1) + rx1(2:2:end)*1j;
+  rx = [rx0c, rx1c];
+end
 ```
 
 In addition, the script in `~/mimo_trx/matlab/decode_rx.m` can be used to decode the received signal and compare to the transmitted.
