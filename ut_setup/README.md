@@ -37,7 +37,7 @@ Select one of preconfigured scripts
 | 1 Spatial Stream | `tx_1st_2GHz.sh` / `rx_1st_2GHz.sh` | `tx_1st_900MHz.sh` / `rx_1st_900MHz.sh` |
 | 2 Spatial Stream | `tx_2st_2GHz.sh` / `rx_2st_2GHz.sh` | `tx_2st_900MHz.sh` / `rx_2st_900MHz.sh` |
 
-Run the scripts `tx_*` in one machine and `rx_*` script in the other, for example in the 2GHz and 1 Spatial stream:
+Run the scripts `tx_*` in one machine and `rx_*` script in the other, for example for the 2GHz and 1 Spatial stream configuration:
 
 In PC1:
 ```
@@ -53,5 +53,5 @@ Each `rx_*` script will generate a pair of recorded signal
 
 |    | 2GHz | 900MHz |
 |:--:|:--:|:--:|
-| 1 Spacial Stream | `rx_1st_2GHz_ch0.dat`, `rx_1st_2GHz_ch1.dat` | `rx_1st_900MHz_ch0.dat`, `rx_1st_900MHz_ch1.dat` |
-| 2 Spacial Stream | `rx_2st_2GHz_ch0.dat`, `rx_2st_2GHz_ch1.dat` | `rx_2st_900MHz_ch0.dat`, `rx_2st_900MHz_ch1.dat` |
+| 1 Spatial Stream | `rx_1st_2GHz_ch0.dat`, `rx_1st_2GHz_ch1.dat` | `rx_1st_900MHz_ch0.dat`, `rx_1st_900MHz_ch1.dat` |
+| 2 Spatial Stream | `rx_2st_2GHz_ch0.dat`, `rx_2st_2GHz_ch1.dat` | `rx_2st_900MHz_ch0.dat`, `rx_2st_900MHz_ch1.dat` |

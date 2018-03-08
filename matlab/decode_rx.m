@@ -1,19 +1,38 @@
 clear all;
 close all;
 
-% Prerecorded Dual Spatial Stream
-config_file = '../data/MCS1_QPSK_rate1-2_config.mat';
-ch0_file = '../data/MCS1_QPSK_rate1-2_ch0.bin';
-ch1_file = '../data/MCS1_QPSK_rate1-2_ch1.bin';
+mode = '2st_2GHz';
+loopback = false;
 
-% Prerecorded Single Spatial Stream
-%config_file = '../data/tx_data.mat';
-%ch0_file = '../data/wlan_ch0.bin';
-%ch1_file = '../data/wlan_ch1.bin';
-
-% Recently Recorded
-%ch0_file = '../rx_wl_ch0.bin';
-%ch1_file = '../rx_wl_ch1.bin';
+if loopback
+    if strcmp(mode, '1st_2GHz') || strcmp(mode, '1st_900Hz')
+        config_file = '../data/MCS1_QPSK_rate1-2_config.mat'; 
+        ch0_file = '../data/MCS1_QPSK_rate1-2_ch0.bin';
+        ch1_file = '../data/MCS1_QPSK_rate1-2_ch1.bin';
+    elseif strcmp(mode, '2st_2GHz') || strcmp(mode, '2st_900Hz')
+        config_file = '../data/MCS9_QPSK_rate1-2_config.mat'; 
+        ch0_file = '../data/MCS9_QPSK_rate1-2_ch0.bin';
+        ch1_file = '../data/MCS9_QPSK_rate1-2_ch1.bin';
+    end
+else
+    if strcmp(mode, '1st_2GHz')
+        config_file = '../data/MCS1_QPSK_rate1-2_config.mat';
+        ch0_file = '../ut_setup/rx_1st_2GHz_ch0.dat';
+        ch1_file = '../ut_setup/rx_1st_2GHz_ch1.dat';
+    elseif strcmp(mode, '2st_2GHz')
+        config_file = '../data/MCS9_QPSK_rate1-2_config.mat';
+        ch0_file = '../ut_setup/rx_2st_2GHz_ch0.dat';
+        ch1_file = '../ut_setup/rx_2st_2GHz_ch1.dat';
+    elseif strcmp(mode, '1st_900MHz')
+        config_file = '../data/MCS1_QPSK_rate1-2_config.mat';
+        ch0_file = '../ut_setup/rx_1st_900MHz_ch0.dat';
+        ch1_file = '../ut_setup/rx_1st_900MHz_ch1.dat';
+    elseif strcmp(mode, '2st_900MHz')
+        config_file = '../data/MCS9_QPSK_rate1-2_config.mat';
+        ch0_file = '../ut_setup/rx_2st_900MHz_ch0.dat';
+        ch1_file = '../ut_setup/rx_2st_900MHz_ch1.dat';
+    end
+end
 
 load(config_file) % Load configurations from tx_data
 
@@ -40,8 +59,8 @@ rx = [rx0c, rx1c];
 % Packet detect and determine coarse packet offset
 coarsePktOffset = wlanPacketDetect(rx,cfgHT.ChannelBandwidth)
 if isempty(coarsePktOffset) % If empty no L-STF detected; packet error
-    numPacketErrors = numPacketErrors+1;
-    n = n+1;
+    fprintf('Could not find coarse Packet Offset, Exiting\n')
+    return
 end
 
 % Extract L-STF and perform coarse frequency offset correction
